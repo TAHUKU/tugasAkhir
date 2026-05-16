@@ -104,42 +104,6 @@ def binary_search(data, target_id):
             right = mid - 1
     return -1, langkah, None
 
-# def hash_search(data, target_id):
-#     """Hash Map Search - Pencarian instan"""
-#     # Preprocessing: buat mapping ID → posisi rak
-#     hash_map = {}
-#     for idx, produk in enumerate(data):
-#         hash_map[produk['id']] = idx
-    
-#     # Pencarian O(1)
-#     posisi = hash_map.get(target_id, -1)
-#     produk = data[posisi] if posisi != -1 else None
-#     return posisi, 1, produk
-
-# def interpolation_search(data, target_id):
-#     """Interpolation Search - Mencari posisi rak (data harus terurut)"""
-#     # data.sort()
-#     data.sort(key=lambda x: x['id'])
-#     low, high = 0, len(data) - 1
-
-#     while low <= high and target_id >= data[low] and target_id <= data[high]:
-#         if low == high:
-#             if data[low] == target_id:
-#                 return low
-#             return -1
-        
-#         # posisi = low + int(((float(high - low) / (data[high] - data[low])) * (target_id - data[low])))
-#         posisi = low + int(((high - low) / (data[high]['id'] - data[low]['id'])) * (target_id_int - data[low]['id']))
-        
-#         if data[posisi] == target_id:
-#             return posisi
-        
-#         if data[posisi] < target_id:
-#             low = posisi + 1
-#         else:
-#             high = posisi - 1
-    
-#     return -1
 def interpolation_search(data, target_id):
     """Interpolation Search - Mencari posisi rak (data HARUS sudah terurut sebelum masuk ke fungsi ini)"""
     langkah = 0
@@ -172,6 +136,7 @@ def interpolation_search(data, target_id):
 st.divider()
 st.subheader("🔍 Cari Produk Berdasarkan ID")
 
+# Menggunakan 3 kolom dengan proporsi lebar yang sesuai
 col1, col2, col3 = st.columns([2, 1, 1])
 
 with col1:
@@ -184,15 +149,18 @@ with col1:
     )
 
 with col2:
+    # Memberikan ruang kosong vertikal agar tombol sejajar dengan input teks di sebelahnya
+    st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
     cari_button = st.button("🔍 Cari Posisi Rak", type="primary", use_container_width=True)
 
 with col3:
+    # Memberikan ruang kosong vertikal yang sama
+    st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
     # Tombol random ID, tapi ID akan muncul di input dan TIDAK berubah kecuali user klik lagi
     if st.button("🎲 Random ID", use_container_width=True):
         random_id = str(random.randint(1, jumlah_produk))
         target_id = random_id
         st.rerun()
-
 
 # ========== HASIL PENCARIAN ==========
 
@@ -279,11 +247,7 @@ if cari_button:
                     st.error(f"❌ Produk dengan ID {target_id} tidak ditemukan!")
                     st.metric("Jumlah Langkah Pencarian", langkah)
             
-            else:  # Hash Map
-                # with st.spinner("Menjalankan Hash Map Search..."):
-                #     start_time = time.time()
-                #     posisi, langkah, produk = hash_search(data_list, target_id_int)
-                #     waktu = (time.time() - start_time) * 1000
+            else:  
                 with st.spinner("Menjalankan Interpolation Search..."):
                     start_time = time.time()
                     posisi, langkah, produk = interpolation_search(data_list, target_id_int)
@@ -328,28 +292,6 @@ with st.expander("📋 Lihat Seluruh Data & Posisi Rak"):
     st.caption(f"💡 **Posisi Rak** adalah indeks array dimana produk disimpan. Dari 0 hingga {len(data_list)-1}")
 
 
-# ========== CONTOH PENGGUNAAN ==========
-
-# with st.expander("📖 Contoh Penggunaan"):
-#     st.markdown(f"""
-#     ### Cara Mencari Produk:
-    
-#     1. **Ketikkan ID produk** di kolom input (contoh: 278, 500, 750)
-#     2. **Pilih algoritma** yang ingin digunakan di sidebar
-#     3. **Klik tombol "Cari Posisi Rak"**
-#     4. Lihat hasil: **📍 Posisi Rak (Indeks Array)** adalah output utama!
-    
-#     ### Contoh Input:
-#     - Jika ingin mencari ID = 278, cukup ketik `278`
-#     - Jika ingin mencari ID = 500, cukup ketik `500`
-    
-#     ### Tombol Random ID:
-#     - Klik "🎲 Random ID" untuk mengisi input dengan ID acak
-#     - ID akan muncul di kolom input, lalu Anda bisa klik "Cari"
-#     - ID TIDAK akan berubah sendiri, hanya berubah jika Anda klik Random lagi atau ketik manual
-#     """)
-
-
 # ========== PERBANDINGAN KETIGANYA ==========
 
 with st.expander("🔬 Bandingkan Ketiga Algoritma"):
@@ -384,11 +326,6 @@ with st.expander("🔬 Bandingkan Ketiga Algoritma"):
                 start = time.time()
                 pos_binary, steps_binary, prod_binary = binary_search(data_sorted, compare_id_int)
                 time_binary = (time.time() - start) * 1000
-                
-                # Hash Map
-                # start = time.time()
-                # pos_hash, steps_hash, prod_hash = hash_search(data_list, compare_id_int)
-                # time_hash = (time.time() - start) * 1000
                 
                 # interpolation search
                 start = time.time()
