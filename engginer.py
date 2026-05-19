@@ -351,3 +351,4 @@ with st.expander("🔬 Bandingkan Ketiga Algoritma"):
 
 st.caption(f"🔄 Data terakhir diperbarui: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 st.caption("🎯 Tugas: Menemukan POSISI RAK (INDEKS ARRAY) berdasarkan ID Produk yang diINPUT MANUAL")
+# print('halo qoul yang sangat baik dan dan baik lagi')

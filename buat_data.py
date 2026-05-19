@@ -22,3 +22,6 @@ with open("data_produk.json", "w") as f:
     json.dump(data_awal, f, indent=4)
 
 print("✅ Data produk telah dibuat di file data_produk.json dengan kategori!")
+
+if __name__ == "__main__":
+    data_barang()
