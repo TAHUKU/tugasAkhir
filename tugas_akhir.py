@@ -2,6 +2,8 @@ import streamlit as st
 import random
 import time
 import pandas as pd
+import math
+
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -12,6 +14,56 @@ st.set_page_config(
 
 st.title("🔍 Sistem Pencarian Produk di Gudang Digital")
 st.write("Menemukan posisi rak (indeks array) berdasarkan ID Produk - Bebas pilih algoritma!")
+
+st.markdown("""
+    <style>
+    /* Mengubah tombol Primary (Tombol 'Cari Sekarang') menjadi warna hijau */
+    div.stButton > button[kind="primary"] {
+        background-color: #22c55e !important;  /* Warna hijau utama */
+        color: white !important;                /* Warna teks tombol */
+        border-radius: 8px;                     /* Sudut melengkung */
+        border: none !important;
+        transition: background-color 0.3s ease;
+    }
+    
+    /* Efek ketika tombol disorot (hover) mouse */
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #16a34a !important;  /* Warna hijau lebih gelap saat di-hover */
+    }
+
+    /* Kustomisasi kartu hasil pencarian dengan latar belakang hitam pekat */
+    .hasil-card {
+        background-color: #000000 !important;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #22c55e;
+        margin-top: 15px;
+    }
+    
+    /* Memaksa teks di dalam kartu menjadi warna putih kontras */
+    .hasil-card p, .hasil-card h4, .hasil-card b {
+        color: #ffffff !important;
+    }
+    .footer-fixed {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #0e1117; /* Warna gelap menyesuaikan tema aplikasi */
+        color: #ffffff;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 12px;
+        border-top: 1px solid #262730;
+        z-index: 999;
+    }
+    </style>
+    
+    <div class="footer-fixed">
+        <p style="margin:0;">🔍 Sistem Pencarian Produk Gudang Digital — Hakkul IT 2025.</p>
+    </div>
+    </style>
+""", unsafe_allow_html=True)
 
 # ========== MEMBUAT DATA PRODUK ==========
 
@@ -48,9 +100,9 @@ with st.sidebar:
     algoritma_terpilih = st.radio(
         "Pilih algoritma yang ingin digunakan:",
         [
-            "🔍 Linear Search (O(n)) - Cek satu per satu",
-            "📚 Binary Search (O(log n)) - Bagi dua array (butuh data terurut)",
-            "⚡ Interpolation Search (O(log (log n))) - Estimasi posisi seperti cari kamus (butuh data terurut)"
+            "🔍 Linear Search",
+            "📚 Binary Search",
+            "⚡ Interpolation Search"
         ],
         help="Pilih algoritma sesuai kebutuhan Anda"
     )
@@ -65,36 +117,10 @@ with st.sidebar:
         [
             "🔄 Data Acak (Unsorted)",
             "📊 Data Terurut berdasarkan ID (Sorted)",
-            "🎲 Data Dinamis (sering berubah)"
         ],
         help="Pilih sesuai kondisi gudang Anda saat ini"
     )
     
-    st.divider()
-    
-    # Info algoritma
-    with st.expander("ℹ️ Detail 3 Algoritma"):
-        st.markdown("""
-        **1. Linear Search (O(n))**
-        - Cara: Cek satu per satu dari awal
-        - Kelebihan: Data boleh acak, mudah implementasi
-        - Kekurangan: Lambat untuk data besar
-        - Cocok: Data < 500 produk
-        
-        **2. Binary Search (O(log n))**
-        - Cara: Bagi array menjadi 2 bagian setiap kali
-        - Kelebihan: Cepat untuk data besar
-        - Kekurangan: Data HARUS terurut dulu
-        - Cocok: Data terurut & stabil
-        
-        **3. Interpolation Search (O(log (log n)))**
-        - Cara: Menggunakan rumus posisi berdasarkan nilai target (seperti mencari nama di kamus)
-        - Kelebihan: Lebih cepat dari Binary Search jika data terurut dan tersebar merata
-        - Kekurangan: Data HARUS terurut, performa buruk jika sebaran data tidak rata
-        - Cocok: Data terurut dengan interval yang konsisten
-        """)
-
-
 # ========== 3 ALGORITMA PENCARIAN ==========
 
 def linear_search(data, target_id):
@@ -154,7 +180,6 @@ def interpolation_search(data, target_id):
             
     return -1, langkah
 
-
 # ========== GENERATE DATA SESUAI KONDISI ==========
 
 products = generate_products(jumlah_produk)
@@ -166,54 +191,32 @@ if kondisi_data == "🔄 Data Acak (Unsorted)":
     random.shuffle(data_list)
     st.info("🔄 **Kondisi Data:** Data dalam keadaan ACAK (tidak terurut)")
     
-elif kondisi_data == "📊 Data Terurut berdasarkan ID (Sorted)":
-    data_list = sorted(products, key=lambda x: x['id'])
-    st.success("📊 **Kondisi Data:** Data dalam keadaan TERURUT berdasarkan ID")
-    
-else:  # Data Dinamis
-    data_list = products.copy()
-    random.seed(24)
-    random.shuffle(data_list)
-    st.warning("🎲 **Kondisi Data:** Data DINAMIS (sering berubah-ubah)")
+else:
+     kondisi_data == "📊 Data Terurut berdasarkan ID (Sorted)"
+     data_list = sorted(products, key=lambda x: x['id'])
+     st.success("📊 **Kondisi Data:** Data dalam keadaan TERURUT berdasarkan ID")
 
-
-# ========== ANTARMUKA PENGGUNA ==========
+# ========== ANTARMUKA PENGGUNA (1 BARIS SEJAJAR) ==========
 
 st.divider()
 st.subheader("🔎 Cari Produk")
 
-# Inisialisasi session state untuk ID input agar nilainya tidak melompat-lompat sendiri
-if 'input_id' not in st.session_state:
-    st.session_state.input_id = 1
-
-col1, col2, col3 = st.columns([2, 1, 1])
+# Menggunakan 2 kolom agar kolom input dan tombol pencarian sejajar dalam satu baris horizontal
+col1, col2 = st.columns([3, 1])
 
 with col1:
-    # Menggunakan nilai default tetap (1) agar pengguna bisa mengetik secara manual dan fokus tanpa auto-generate angka acak
     target_id = st.number_input(
-        "Masukkan ID Produk yang dicari (Ketik Manual):",
+        "Masukkan ID Produk yang dicari: ",
         min_value=1,
         max_value=jumlah_produk,
-        value=st.session_state.input_id,
+        value=1,
         step=1,
         key="id_produk_input"
     )
-    # Update session state dengan nilai yang sedang diketik user
-    st.session_state.input_id = target_id
 
 with col2:
-    st.write("") # Pengisi jarak vertikal agar sejajar dengan tombol sebelah
-    st.write("") 
+    st.write("<style>div.row-widget.stButton { margin-top: 28px; }</style>", unsafe_allow_html=True) 
     cari_button = st.button("🔍 Cari Sekarang", type="primary", use_container_width=True)
-
-with col3:
-    st.write("") 
-    st.write("") 
-    random_button = st.button("🎲 Acak ID Saja", use_container_width=True)
-    if random_button:
-        st.session_state.input_id = random.randint(1, jumlah_produk)
-        st.rerun()
-
 
 # ========== EKSEKUSI PENCARIAN ==========
 
@@ -245,7 +248,13 @@ if cari_button:
         
         if indeks != -1:
             produk = data_list[indeks]
-            st.info(f"📦 **Produk ditemukan:** {produk['nama']} | 💰 Harga: Rp {produk['harga']:,.0f}")
+            st.markdown(f"""
+            <div class="hasil-card">
+                <h4 style="margin-top: 0;">📦 Spesifikasi Item Ditemukan</h4>
+                <p style="margin-bottom: 8px;"><b>Nama Barang:</b> {produk['nama']}</p>
+                <p style="margin-bottom: 0;"><b>Nilai / Harga Barang:</b> Rp {produk['harga']:,.0f}</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.error(f"❌ Produk dengan ID {target_id} tidak ditemukan dalam {langkah} langkah!")
     
@@ -270,7 +279,13 @@ if cari_button:
         
         if indeks != -1:
             produk = data_sorted[indeks]
-            st.info(f"📦 **Produk ditemukan:** {produk['nama']} | 💰 Harga: Rp {produk['harga']:,.0f}")
+            st.markdown(f"""
+            <div class="hasil-card">
+                <h4 style="margin-top: 0;">📦 Spesifikasi Item Ditemukan</h4>
+                <p style="margin-bottom: 8px;"><b>Nama Barang:</b> {produk['nama']}</p>
+                <p style="margin-bottom: 0;"><b>Nilai / Harga Barang:</b> Rp {produk['harga']:,.0f}</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.error(f"❌ Produk dengan ID {target_id} tidak ditemukan dalam {langkah} langkah!")
     
@@ -295,13 +310,17 @@ if cari_button:
         
         if indeks != -1:
             produk = data_sorted[indeks]
-            st.info(f"📦 **Produk ditemukan:** {produk['nama']} | 💰 Harga: Rp {produk['harga']:,.0f}")
+            st.markdown(f"""
+            <div class="hasil-card">
+                <h4 style="margin-top: 0;">📦 Spesifikasi Item Ditemukan</h4>
+                <p style="margin-bottom: 8px;"><b>Nama Barang:</b> {produk['nama']}</p>
+                <p style="margin-bottom: 0;"><b>Nilai / Harga Barang:</b> Rp {produk['harga']:,.0f}</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.error(f"❌ Produk dengan ID {target_id} tidak ditemukan dalam {langkah} langkah!")
-
-
+            
 # ========== DEMO PERBANDINGAN KETIGANYA ==========
-
 st.divider()
 with st.expander("🔬 Demo: Bandingkan Ketiga Algoritma Sekaligus"):
     st.write("Lihat perbandingan kecepatan 3 algoritma secara real-time berdasarkan ID pilihanmu di atas")
@@ -352,8 +371,10 @@ with st.expander("🔬 Demo: Bandingkan Ketiga Algoritma Sekaligus"):
         fastest_names = ["Linear Search", "Binary Search", "Interpolation Search"]
         st.success(f"⚡ **Paling cepat:** {fastest_names[fastest_idx]} dengan waktu {min(times):.3f} ms!")
 
-
+        
 # ========== TABEL DATA PRODUK ==========
+
+# ========== TABEL DATA PRODUK (NAVIGASI TOMBOL SEBELUMNYA / SELANJUTNYA) ==========
 
 with st.expander("📋 Lihat Semua Data Produk"):
     df = pd.DataFrame(data_list)
@@ -365,31 +386,76 @@ with st.expander("📋 Lihat Semua Data Produk"):
         'harga': 'Harga',
         'rak': 'Posisi Rak'
     })
-    st.dataframe(df_display, use_container_width=True, height=400)
-
-
-# ========== VISUALISASI KECEPATAN ==========
-
-with st.expander("📊 Visualisasi Perbandingan Algoritma"):
-    st.subheader("Grafik Kecepatan Teoritis (n = jumlah data)")
     
-    ukuran_data = list(range(100, 1001, 100))
-    linear_times = [x for x in ukuran_data]
-    binary_times = [x * 0.1 for x in ukuran_data]
-    inter_times = [1.5 for _ in ukuran_data] # Representasi log(log(n)) yang stabil mendekati konstan
+    # 1. Parameter Konfigurasi Paginasi
+    baris_per_halaman = 10
+    total_data = len(df_display)
+    total_halaman = math.ceil(total_data / baris_per_halaman)
     
-    chart_data = pd.DataFrame({
-        'Jumlah Data': ukuran_data,
-        'Linear Search O(n)': linear_times,
-        'Binary Search O(log n)': binary_times,
-        'Interpolation Search O(log (log n))': inter_times
-    })
-    
-    st.line_chart(chart_data.set_index('Jumlah Data'))
-    st.caption("📌 **Grafik simulasi:** Semakin rendah posisi garis grafik, menandakan performa algoritma yang semakin cepat.")
+    # 2. Inisialisasi Session State untuk menyimpan halaman aktif saat ini
+    if 'halaman_sekarang' not in st.session_state:
+        st.session_state.halaman_sekarang = 1
+        
+    # Validasi keamanan: jika slider jumlah data diperkecil di sidebar, 
+    # pastikan halaman sekarang tidak melebihi total halaman yang baru.
+    if st.session_state.halaman_sekarang > total_halaman:
+        st.session_state.halaman_sekarang = 1
 
+    # 3. Membuat Layout Baris Navigasi (Tombol - Teks Info - Tombol)
+    col_prev, col_info, col_next = st.columns([1, 4, 1])
+    
+    with col_prev:
+        # Tombol akan mati (disabled) jika berada di halaman pertama
+        if st.button("⬅️ Sebelumnya", use_container_width=True, disabled=(st.session_state.halaman_sekarang == 1)):
+            st.session_state.halaman_sekarang -= 1
+            st.rerun()
+            
+    with col_info:
+        # Menampilkan teks informasi halaman aktif di tengah-tengah tombol
+        st.markdown(f"""
+            <div style='text-align: center; padding-top: 5px;'>
+                Halaman <b>{st.session_state.halaman_sekarang}</b> dari <b>{total_halaman}</b> <br>
+                <span style='color: gray; font-size: 0.85rem;'>Menampilkan data ke-{((st.session_state.halaman_sekarang-1) * baris_per_halaman) + 1} sampai {min(st.session_state.halaman_sekarang * baris_per_halaman, total_data)} dari {total_data} produk</span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with col_next:
+        # Tombol akan mati (disabled) jika sudah mencapai halaman terakhir
+        if st.button("Selanjutnya ➡️", use_container_width=True, disabled=(st.session_state.halaman_sekarang == total_halaman)):
+            st.session_state.halaman_sekarang += 1
+            st.rerun()
+            
+    st.write("") # Memberi jarak vertikal sedikit sebelum tabel
+    
+    # 4. Memotong Data Sesuai Urutan Halaman Aktif (Slicing Index)
+    start_idx = (st.session_state.halaman_sekarang - 1) * baris_per_halaman
+    end_idx = start_idx + baris_per_halaman
+    df_halaman = df_display.iloc[start_idx:end_idx]
+    
+    # 5. Tampilkan Tabel Ringkas (Hanya berisi 10 baris)
+    st.dataframe(df_halaman, use_container_width=True)
 
 # ========== REKOMENDASI BERDASARKAN PILIHAN USER ==========
+with st.expander("ℹ️ Detail 3 Algoritma"):
+        st.markdown("""
+        **1. Linear Search (O(n))**
+        - Cara: Cek satu per satu dari awal
+        - Kelebihan: Data boleh acak, mudah implementasi
+        - Kekurangan: Lambat untuk data besar
+        - Cocok: Data < 500 produk
+        
+        **2. Binary Search (O(log n))**
+        - Cara: Bagi array menjadi 2 bagian setiap kali
+        - Kelebihan: Cepat untuk data besar
+        - Kekurangan: Data HARUS terurut dulu
+        - Cocok: Data terurut & stabil
+        
+        **3. Interpolation Search (O(log (log n)))**
+        - Cara: Menggunakan rumus posisi berdasarkan nilai target (seperti mencari nama di kamus)
+        - Kelebihan: Lebih cepat dari Binary Search jika data terurut dan tersebar merata
+        - Kekurangan: Data HARUS terurut, performa buruk jika sebaran data tidak rata
+        - Cocok: Data terurut dengan interval yang konsisten
+        """)
 
 st.divider()
 st.subheader("💡 Analisis Kombinasi Pilihan Anda")
