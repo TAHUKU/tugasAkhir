@@ -344,7 +344,9 @@ if cari_button:
     elif "Kategori" in kondisi_data and key_cari == 'kategori':
         valid_sort = True
 
-    is_desc = "Termahal" in kondisi_data
+    # Tentukan arah DESC/ASC secara akurat berdasarkan pilihan radio
+    is_desc = kondisi_data == "📈 Harga: Termahal ──> Termurah"
+
     
     if ("Binary Search" in algoritma_terpilih or "Interpolation Search" in algoritma_terpilih) and not valid_sort:
         st.error(f"❌ **Gagal Eksekusi:** Algoritma Binary atau Interpolation Search mendesak data terurut berdasarkan kunci pencarian yang sama! Struktur urutan saat ini ({kondisi_data}) tidak sesuai dengan variabel pencarian ({key_cari.upper()}).")
