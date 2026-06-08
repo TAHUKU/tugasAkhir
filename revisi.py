@@ -107,15 +107,23 @@ def dapatkan_data_gudang(kondisi_sort, filter_kat, _produk_dasar, jml_prd):
     else:
         data_lokal = produk_terpotong.copy()
         
-    # ========== OPERASI SORTING LENGKAP ==========
+    # ========== OPERASI SORTING LENGKAP & MULTI-SORTING ==========
     if kondisi_sort == "📉 Harga: Termurah ──> Termahal":
         data_lokal = sorted(data_lokal, key=lambda x: x['harga'])
     elif kondisi_sort == "📈 Harga: Termahal ──> Termurah":
         data_lokal = sorted(data_lokal, key=lambda x: x['harga'], reverse=True)
     elif kondisi_sort == "🔤 Nama Produk (A ──> Z)":
         data_lokal = sorted(data_lokal, key=lambda x: x['nama'].lower())
-    elif kondisi_sort == "🗂️ Berdasarkan Kategori (Makanan dulu)":
-        data_lokal = sorted(data_lokal, key=lambda x: (x['kategori'], x['harga']))
+        
+    # --- PILIHAN MULTI-SORTING BARU ---
+    elif kondisi_sort == "🗂️ Kategori & Harga (Termurah)":
+        # Mengurutkan kategori (A-Z), lalu harga (Kecil ke Besar)
+        data_lokal = sorted(data_lokal, key=lambda x: (x['kategori'].lower(), x['harga']))
+    elif kondisi_sort == "🗂️ Kategori & Harga (Termahal)":
+        # Mengurutkan kategori (A-Z), lalu harga (Besar ke Kecil menggunakan tanda minus)
+        data_lokal = sorted(data_lokal, key=lambda x: (x['kategori'].lower(), -x['harga']))
+    # ----------------------------------
+        
     else:
         data_lokal = sorted(data_lokal, key=lambda x: x['id'])
         
@@ -145,102 +153,112 @@ def binary_search(data, target, key_cari, is_descending=False):
     langkah = 0
     left, right = 0, len(data) - 1
     
+    # Normalisasi target sesuai tipe data
     if key_cari == 'harga':
-        val_target = int(target) # Perbaikan: Membandingkan angka matematika murni
+        val_target = int(target)
     else:
-        val_target = str(target).lower()
+        val_target = str(target).lower().strip()
     
     while left <= right:
         langkah += 1
         mid = (left + right) // 2
         
+        # Normalisasi nilai tengah (mid) sesuai tipe data
         if key_cari == 'harga':
             val_mid = int(data[mid][key_cari])
         else:
-            val_mid = str(data[mid][key_cari]).lower()
+            val_mid = str(data[mid][key_cari]).lower().strip()
+            
+        # --- PERBAIKAN LOGIKA PENCOCOKAN (Mencegah TypeError) ---
+        if key_cari == 'harga':
+            if val_mid == val_target:
+                return mid, langkah
+        else:
+            if val_target in val_mid:
+                return mid, langkah
+        # --------------------------------------------------------
         
-        if val_mid == val_target:
-            return mid, langkah
-        
-        if not is_descending: # Jalur jika data dari Termurah ke Termahal (Ascending)
+        # Logika pergeseran indeks pencarian
+        if not is_descending: # Urutan Menaik (Ascending)
             if val_mid < val_target:
                 left = mid + 1
             else:
                 right = mid - 1
-        else:                 # Jalur jika data dari Termahal ke Termurah (Descending)
+        else:                 # Urutan Menurun (Descending)
             if val_mid > val_target:
                 left = mid + 1
             else:
                 right = mid - 1
+                
     return -1, langkah
+
 
 def interpolation_search(data, target, key_cari, is_descending=False):
     langkah = 0
     low = 0
     high = len(data) - 1
     
+    if len(data) == 0:
+        return -1, 0
+
+    # Fungsi pembantu untuk mengubah nilai menjadi angka murni untuk rumus posisi
+    def get_numeric_value(item_val):
+        if key_cari == 'harga':
+            return int(item_val)
+        teks = str(item_val).lower().strip()
+        return ord(teks[0]) if len(teks) > 0 else 0
+
     if key_cari == 'harga':
         target_val = int(target)
     else:
-        target_val = ord(str(target)[0].lower()) if target else 0
+        target_val = get_numeric_value(target)
         
-    def get_numeric_value(item):
-        if key_cari == 'harga':
-            return int(item['harga']) # Angka matematika asli untuk perhitungan jarak
-        return ord(str(item[key_cari])[0].lower()) if item[key_cari] else 0
-        
-    if low > high:
-        return -1, 0
-        
-    low_val = get_numeric_value(data[low])
-    high_val = get_numeric_value(data[high])
-    
-    if not is_descending:
-        if target_val < low_val or target_val > high_val:
-            return -1, 0
-    else:
-        if target_val > low_val or target_val < high_val:
-            return -1, 0
-
     while low <= high:
         langkah += 1
-        low_val = get_numeric_value(data[low])
-        high_val = get_numeric_value(data[high])
+        low_val = get_numeric_value(data[low][key_cari])
+        high_val = get_numeric_value(data[high][key_cari])
         
+        if target_val < min(low_val, high_val) or target_val > max(low_val, high_val):
+            break
+            
         if high_val == low_val:
-            if key_cari == 'harga':
-                if int(data[low]['harga']) == target_val: return low, langkah
-            else:
-                if str(data[low][key_cari]).lower() == str(target).lower(): return low, langkah
+            val_low = data[low][key_cari]
+            if key_cari == 'harga' and int(val_low) == target_val: 
+                return low, langkah
+            elif key_cari != 'harga' and str(target).lower().strip() in str(val_low).lower(): 
+                return low, langkah
             break
         
-        # Rumus posisi interpolasi angka murni terbebas dari bias string
+        # Rumus utama Interpolation Search
         pos = low + int(((float(high - low) / (high_val - low_val)) * (target_val - low_val)))
+        
         if pos < low or pos > high:
             break
             
-        if key_cari == 'harga':
-            val_pos = int(data[pos]['harga'])
-        else:
-            val_pos = str(data[pos][key_cari]).lower()
-            
-        actual_target = target_val if key_cari == 'harga' else str(target).lower()
+        val_pos = data[pos][key_cari]
         
-        if val_pos == actual_target:
-            return pos, langkah
+        # --- PERBAIKAN LOGIKA PENCOCOKAN ---
+        if key_cari == 'harga':
+            if int(val_pos) == target_val:
+                return pos, langkah
+        else:
+            if str(target).lower().strip() in str(val_pos).lower():
+                return pos, langkah
+        # -----------------------------------
             
+        pos_numeric = get_numeric_value(val_pos)
         if not is_descending:
-            if val_pos < actual_target:
+            if pos_numeric < target_val:
                 low = pos + 1
             else:
                 high = pos - 1
         else:
-            if val_pos > actual_target:
+            if pos_numeric > target_val:
                 low = pos + 1
             else:
                 high = pos - 1
+                
     return -1, langkah
-
 # ========== NAVIGATION STATE ==========
 if 'halaman_sekarang' not in st.session_state:
     st.session_state.halaman_sekarang = 1
@@ -274,7 +292,6 @@ with st.sidebar:
     st.subheader("🎯 Pilih Algoritma Pencarian")
     algoritma_terpilih = st.radio("Pilih algoritma yang ingin digunakan:", ["🔍 Linear Search", "📚 Binary Search", "⚡ Interpolation Search"])
     
-    st.divider()
     st.subheader("📦 Pengurutan Data Gudang (Sorting)")
     kondisi_data = st.radio(
         "Urutkan susunan data rak berdasarkan:", 
@@ -282,7 +299,8 @@ with st.sidebar:
             "📉 Harga: Termurah ──> Termahal", 
             "📈 Harga: Termahal ──> Termurah", 
             "🔤 Nama Produk (A ──> Z)",
-            "🗂️ Berdasarkan Kategori (Makanan dulu)"
+            "🗂️ Kategori & Harga (Termurah)",  # Opsi Baru
+            "🗂️ Kategori & Harga (Termahal)"   # Opsi Baru
         ]
     )
     # Letakkan ini di bagian paling bawah blok 'with st.sidebar:'
@@ -303,12 +321,15 @@ with col_info2:
     st.warning(f"💡 **Total Produk Aktif Sesuai Filter Kategori:** {len(data_list)} Items")
 
 # ========== INTERMUKA INPUT MULTI-KATEGORI PENCARIAN ==========
+# ========== INTERMUKA INPUT MULTI-KATEGORI PENCARIAN ==========
+# ========== INTERMUKA INPUT 2 PILIHAN (SEDERHANA & PINTAR) ==========
 st.divider()
 st.subheader("🔎 Menu Operasi Pencarian Pintar")
 
+# Disederhanakan menjadi 2 pilihan sesuai permintaan Anda
 kategori_pencarian = st.selectbox(
     "Pilih Parameter Variabel Pencarian:",
-    ["Nominal Harga Barang (Angka Bulat)", "Nama Spesifik Produk (Huruf/Teks)", "Kategori Menu (Makanan / Minuman)"]
+    ["Nominal Harga Barang (Angka Bulat)", "Nama Produk / Kategori Menu (Teks)"]
 )
 
 col1, col2 = st.columns([3, 1], vertical_alignment="bottom")
@@ -318,96 +339,114 @@ with col1:
         key_cari = 'harga'
         maks_harga_dinamis = int(5000 + (jumlah_produk * 1000))
         target_input = st.number_input("Masukkan Nominal Harga Produk (Kelipatan Rp 1.000): ", min_value=5000, max_value=maks_harga_dinamis, value=5000, step=1000)
-    elif "Nama" in kategori_pencarian:
-        key_cari = 'nama'
-        target_input = st.text_input("Masukkan Kata Kunci Nama Makanan/Minuman (Contoh: Nasi Goreng, Ayam):", value="Nasi Goreng")
     else:
-        key_cari = 'kategori'
-        target_input = st.selectbox("Pilih Kategori:", ["Makanan", "Minuman"])
+        key_cari = 'nama'  # Default mencari ke teks nama produk
+        target_input = st.text_input("Masukkan Nama Makanan, Minuman, atau Jenis Kategori:", value="Nasi Goreng")
 
 with col2:
     cari_button = st.button("🔍 Cari Sekarang", type="primary", use_container_width=True)
 
 # ========== EKSEKUSI SEARCHING OPERASI ==========
 if cari_button:
+    input_teks = str(target_input).lower().strip()
+    data_pencarian = data_list.copy()
+    
+    # KECERDASAN BUATAN: Jika user memilih Teks dan yang diinput adalah keyword kategori murni
+    if key_cari == 'nama' and input_teks in ["makanan", "minuman"]:
+        key_cari = 'kategori'  # Alihkan pencarian ke kolom kategori agar akurat
+
     st.session_state.pencarian_dimulai = True
-    st.session_state.target_terpilih = str(target_input) # Merekam input yang benar-benar diketik user
+    st.session_state.target_terpilih = str(target_input)
     
     st.divider()
     st.subheader("📊 Hasil Pencarian")
     
-    valid_sort = False
-    if "Harga" in kondisi_data and key_cari == 'harga':
-        valid_sort = True
-    elif "Nama" in kondisi_data and key_cari == 'nama':
-        valid_sort = True
-    elif "Kategori" in kondisi_data and key_cari == 'kategori':
-        valid_sort = True
-
-    # Tentukan arah DESC/ASC secara akurat berdasarkan pilihan radio
-    is_desc = kondisi_data == "📈 Harga: Termahal ──> Termurah"
-
+    # --- HANDLING AUTO-SORTING BELAKANG LAYAR AGAR BINARY/INTERPOLATION TIDAK EROR ---
+    valid_sort = True
+    is_desc = "Termahal" in kondisi_data
     
-    if ("Binary Search" in algoritma_terpilih or "Interpolation Search" in algoritma_terpilih) and not valid_sort:
-        st.error(f"❌ **Gagal Eksekusi:** Algoritma Binary atau Interpolation Search mendesak data terurut berdasarkan kunci pencarian yang sama! Struktur urutan saat ini ({kondisi_data}) tidak sesuai dengan variabel pencarian ({key_cari.upper()}).")
-    else:
-        indeks_ditemukan = -1
+    if key_cari == 'nama' and "Nama" not in kondisi_data:
+        # Jika mencari nama tapi rak di sidebar tidak urut nama, kita urutkan di background
+        data_pencarian = sorted(data_pencarian, key=lambda x: x['nama'].lower())
+        is_desc = False
+        st.caption("ℹ️ *Sistem otomatis mengurutkan indeks berdasarkan alfabetis Nama di latar belakang agar Binary/Interpolation berjalan.*")
         
-        if "Linear Search" in algoritma_terpilih:
-            with st.spinner("Menjalankan Linear Search..."):
-                start_time = time.time()
-                indeks, langkah = linear_search(data_list, target_input, key_cari)
-                waktu = (time.time() - start_time) * 1000
-            nama_algo_info = "Linear Search (O(n))"
-            indeks_ditemukan = indeks
-            st.session_state.indeks_ditemukan = indeks
-                
-        elif "Binary Search" in algoritma_terpilih:
-            with st.spinner("Menjalankan Binary Search..."):
-                start_time = time.time()
-                indeks, langkah = binary_search(data_list, target_input, key_cari, is_descending=is_desc)
-                waktu = (time.time() - start_time) * 1000
-            nama_algo_info = "Binary Search (O(log n))"
-            indeks_ditemukan = indeks
-            st.session_state.indeks_ditemukan = indeks
+    elif key_cari == 'harga' and "Harga" not in kondisi_data:
+        # Jika mencari harga tapi rak di sidebar tidak urut harga murni, kita urutkan di background
+        data_pencarian = sorted(data_pencarian, key=lambda x: x['harga'], reverse=is_desc)
+        st.caption("ℹ️ *Sistem otomatis menyelaraskan urutan Harga di latar belakang agar Binary/Interpolation presisi.*")
         
-        else:
-            with st.spinner("Menjalankan Interpolation Search..."):
-                start_time = time.time()
-                indeks, langkah = interpolation_search(data_list, target_input, key_cari, is_descending=is_desc)
-                waktu = (time.time() - start_time) * 1000
-            nama_algo_info = "Interpolation Search (O(log (log n)))"
-            indeks_ditemukan = indeks
-            st.session_state.indeks_ditemukan = indeks
+    elif key_cari == 'kategori' and "Kategori" not in kondisi_data:
+        # Jika mencari kategori murni tapi rak di sidebar tidak mendukung
+        data_pencarian = sorted(data_pencarian, key=lambda x: x['kategori'].lower())
+        is_desc = False
+        st.caption("ℹ️ *Sistem otomatis mengelompokkan Kategori di latar belakang agar Binary/Interpolation berjalan.*")
 
-        if indeks_ditemukan != -1:
-            st.success(f"✅ **Algoritma Berhasil: {nama_algo_info}**")
-            col_a, col_b, col_c = st.columns(3)
-            with col_a: st.metric("Posisi Rak (Indeks Array)", indeks_ditemukan)
-            with col_b: st.metric("Jumlah Langkah Komputasi", langkah)
-            with col_c: st.metric("Waktu Eksekusi", f"{waktu:.3f} ms")
+    # Jalankan Algoritma
+    indeks_ditemukan = -1
+    
+    if "Linear Search" in algoritma_terpilih:
+        with st.spinner("Menjalankan Linear Search..."):
+            start_time = time.time()
+            indeks, langkah = linear_search(data_list, target_input, key_cari)
+            waktu = (time.time() - start_time) * 1000
+        nama_algo_info = "Linear Search (O(n))"
+        indeks_ditemukan = indeks
+        st.session_state.indeks_ditemukan = indeks
             
-            produk = data_list[indeks_ditemukan]
-            st.markdown(f"""
-            <div class="hasil-card">
-                <h4>📦 Spesifikasi Item Ditemukan</h4>
-                <p><b>Nama Barang:</b> {produk['nama']}</p>
-                <p><b>Kategori:</b> {produk['kategori']}</p>
-                <p><b>Nilai / Harga Barang:</b> Rp {produk['harga']:,.0f}</p>
-                <hr style="border: 0.5px solid #555; margin: 10px 0;">
-                <p style="color: #60a5fa;"><b>🔢 Nomor Urut Daftar Barang:</b> {indeks_ditemukan + 1}</p>
-                <p style="color: #fca5a5;"><b>💻 Posisi Indeks Array Komputer:</b> {indeks_ditemukan}</p>
-            </div>
-            """, unsafe_allow_html=True)
+    elif "Binary Search" in algoritma_terpilih:
+        with st.spinner("Menjalankan Binary Search..."):
+            start_time = time.time()
+            indeks, langkah = binary_search(data_pencarian, target_input, key_cari, is_descending=is_desc)
+            waktu = (time.time() - start_time) * 1000
+        nama_algo_info = "Binary Search (O(log n))"
+        
+        if indeks != -1:
+            produk_ketemu = data_pencarian[indeks]
+            indeks_ditemukan = next(i for i, p in enumerate(data_list) if p['id'] == produk_ketemu['id'])
+        st.session_state.indeks_ditemukan = indeks_ditemukan
+    
+    else:
+        with st.spinner("Menjalankan Interpolation Search..."):
+            start_time = time.time()
+            indeks, langkah = interpolation_search(data_pencarian, target_input, key_cari, is_descending=is_desc)
+            waktu = (time.time() - start_time) * 1000
+        nama_algo_info = "Interpolation Search (O(log (log n)))"
+        
+        if indeks != -1:
+            produk_ketemu = data_pencarian[indeks]
+            indeks_ditemukan = next(i for i, p in enumerate(data_list) if p['id'] == produk_ketemu['id'])
+        st.session_state.indeks_ditemukan = indeks_ditemukan
 
-            baris_per_halaman = 10
-            halaman_tujuan = (indeks_ditemukan // baris_per_halaman) + 1
-            if st.session_state.halaman_sekarang != halaman_tujuan:
-                st.session_state.halaman_sekarang = halaman_tujuan
-                st.rerun()
-        else:
-            st.session_state.indeks_ditemukan = -1
-            st.error(f"❌ Kriteria produk dengan data '{target_input}' tidak berhasil diidentifikasi di struktur rak aktif saat ini.")
+    # Menampilkan Hasil Ke Layar
+    if indeks_ditemukan != -1:
+        st.success(f"✅ **Algoritma Berhasil: {nama_algo_info}**")
+        col_a, col_b, col_c = st.columns(3)
+        with col_a: st.metric("Posisi Rak Saat Ini (Indeks Array)", indeks_ditemukan)
+        with col_b: st.metric("Jumlah Langkah Komputasi", langkah)
+        with col_c: st.metric("Waktu Eksekusi", f"{waktu:.3f} ms")
+        
+        produk = data_list[indeks_ditemukan]
+        st.markdown(f"""
+        <div class="hasil-card">
+            <h4>📦 Spesifikasi Item Ditemukan</h4>
+            <p><b>Nama Barang:</b> {produk['nama']}</p>
+            <p><b>Kategori:</b> {produk['kategori']}</p>
+            <p><b>Nilai / Harga Barang:</b> Rp {produk['harga']:,.0f}</p>
+            <hr style="border: 0.5px solid #555; margin: 10px 0;">
+            <p style="color: #60a5fa;"><b>🔢 Nomor Urut Daftar Barang:</b> {indeks_ditemukan + 1}</p>
+            <p style="color: #fca5a5;"><b>💻 Posisi Indeks Array Komputer:</b> {indeks_ditemukan} (Sesuai susunan rak aktif)</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        baris_per_halaman = 10
+        halaman_tujuan = (indeks_ditemukan // baris_per_halaman) + 1
+        if st.session_state.halaman_sekarang != halaman_tujuan:
+            st.session_state.halaman_sekarang = halaman_tujuan
+            st.rerun()
+    else:
+        st.session_state.indeks_ditemukan = -1
+        st.error(f"❌ Kriteria produk dengan data '{target_input}' tidak berhasil diidentifikasi di struktur rak aktif saat ini.")
 
 if str(target_input) != st.session_state.target_terpilih:
     st.session_state.pencarian_dimulai = False
@@ -418,22 +457,38 @@ st.divider()
 with st.expander("🔬 Perbandingkan Ketiga Algoritma Sekaligus"):
     st.write("Lihat perbandingan kecepatan 3 algoritma secara simultan berdasarkan susunan rak aktif")
     if st.button("📊 Bandingkan Semua Algoritma", use_container_width=True, key="btn_banding"):
-        if ("Binary Search" in algoritma_terpilih or "Interpolation Search" in algoritma_terpilih) and not valid_sort:
-            st.error("Proses perbandingan komparatif gagal: Kondisi sorting data gudang di sidebar harus disesuaikan terlebih dahulu agar setara dengan jenis kata kunci yang Anda masukkan saat ini.")
-        else:
-            start = time.time(); idx_l, steps_l = linear_search(data_list, target_input, key_cari); t_l = (time.time() - start) * 1000
-            start = time.time(); idx_b, steps_b = binary_search(data_list, target_input, key_cari, is_descending=is_desc); t_b = (time.time() - start) * 1000
-            start = time.time(); idx_i, steps_i = interpolation_search(data_list, target_input, key_cari, is_descending=is_desc); t_i = (time.time() - start) * 1000
-            
-            comparison_data = {
-                "Algoritma": ["Linear Search", "Binary Search", "Interpolation Search"],
-                "Ditemukan": ["✅" if idx_l != -1 else "❌", "✅" if idx_b != -1 else "❌", "✅" if idx_i != -1 else "❌"],
-                "Posisi Indeks Rak": [idx_l, idx_b, idx_i],
-                "Langkah": [steps_l, steps_b, steps_i],
-                "Waktu (ms)": [f"{t_l:.3f}", f"{t_b:.3f}", f"{t_i:.3f}"]
-            }
-            st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, hide_index=True)
+        
+        data_banding = data_list.copy()
+        is_desc_banding = "Termahal" in kondisi_data
+        key_cari_banding = key_cari
+        
+        # Logika penyelarasan banding balik layar
+        if key_cari_banding == 'nama' and "Nama" not in kondisi_data:
+            data_banding = sorted(data_banding, key=lambda x: x['nama'].lower())
+            is_desc_banding = False
+        elif key_cari_banding == 'harga' and "Harga" not in kondisi_data:
+            data_banding = sorted(data_banding, key=lambda x: x['harga'], reverse=is_desc_banding)
+        elif key_cari_banding == 'kategori' and "Kategori" not in kondisi_data:
+            data_banding = sorted(data_banding, key=lambda x: x['kategori'].lower())
+            is_desc_banding = False
 
+        start = time.time(); idx_l, steps_l = linear_search(data_list, target_input, key_cari_banding); t_l = (time.time() - start) * 1000
+        
+        start = time.time(); idx_b, steps_b = binary_search(data_banding, target_input, key_cari_banding, is_descending=is_desc_banding); t_b = (time.time() - start) * 1000
+        if idx_b != -1: idx_b = next(i for i, p in enumerate(data_list) if p['id'] == data_banding[idx_b]['id'])
+        
+        start = time.time(); idx_i, steps_i = interpolation_search(data_banding, target_input, key_cari_banding, is_descending=is_desc_banding); t_i = (time.time() - start) * 1000
+        if idx_i != -1: idx_i = next(i for i, p in enumerate(data_list) if p['id'] == data_banding[idx_i]['id'])
+        
+        comparison_data = {
+            "Algoritma": ["Linear Search", "Binary Search", "Interpolation Search"],
+            "Ditemukan": ["✅" if idx_l != -1 else "❌", "✅" if idx_b != -1 else "❌", "✅" if idx_i != -1 else "❌"],
+            "Posisi Indeks Rak": [idx_l, idx_b, idx_i],
+            "Langkah": [steps_l, steps_b, steps_i],
+            "Waktu (ms)": [f"{t_l:.3f}", f"{t_b:.3f}", f"{t_i:.3f}"]
+        }
+        st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, hide_index=True)
+        
 # ========== TABEL UTAMA DATA PRODUK ==========
 with st.expander("📋 Lihat Semua Data Produk", expanded=True):
     df = pd.DataFrame(data_list)
