@@ -55,46 +55,40 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+
 # ========== MEMBUAT DATA PRODUK (FIXED INDENTASI & RETURN VALUE) ==========
 
 @st.cache_data
 def generate_products(n=500):
-    list_makanan = [
-        "Nasi Goreng", "Mie Ayam", "Bakso Sapi", "Sate Ayam", "Ayam Goreng", 
-        "Roti Bakar", "Keripik Singkong", "Biskuit Cokelat", "Martabak Manis", 
-        "Gado-Gado", "Soto Betawi", "Rendang Padang", "Siomay Bandung", "Batagor"
-    ]
-    list_minuman = [
-        "Es Teh Manis", "Kopi Susu", "Jus Alpukat", "Air Mineral", "Teh Tarik", 
-        "Es Jeruk", "Susu UHT", "Soda Gembira", "Matcha Latte", "Es Dawet", 
-        "Kopi Hitam", "Lemon Tea", "Smoothie Mangga", "Wedang Jahe"
-    ]
+    list_makanan = ["Nasi Goreng", "Mie Ayam", "Bakso Sapi", "Sate Ayam", "Ayam Goreng", "Roti Bakar", "Soto Betawi", "Rendang Padang"]
+    list_minuman = ["Es Teh", "Kopi Susu", "Jus Alpukat", "Air Mineral", "Teh Tarik", "Es Jeruk", "Matcha Latte", "Kopi Hitam"]
+    
+    # Variasi tambahan agar nama unik dan tidak monoton berulang
+    variasi_rasa = ["Spesial", "Pedas", "Super", "Original", "Premium", "Keju", "Cokelat", "Jumbo", "Bakar", "Crispy"]
     
     products = []
     local_random = random.Random(100) 
     
-    # PERBAIKAN: Seluruh proses di bawah ini MASUK ke dalam loop 'for'
     for i in range(n):
         kategori = local_random.choice(["Makanan", "Minuman"])
         
-        nama_dasar = (
-            local_random.choice(list_makanan)
-            if kategori == "Makanan"
-            else local_random.choice(list_minuman)
-        )
+        # Ambil nama dasar menu
+        nama_dasar = local_random.choice(list_makanan) if kategori == "Makanan" else local_random.choice(list_minuman)
+        # Ambil tambahan variasi rasa secara acak
+        rasa = local_random.choice(variasi_rasa)
         
-        # PERMINTAAN ANDA: Harga dibuat bulat kelipatan Rp 1.000 (5000, 6000, 7000, dst.)
         harga_bulat = 5000 + (i * 1000)
         
         products.append({
             'id': i + 1,
-            'nama': f"{nama_dasar} (ID: {i+1})",
+            'nama': f"{nama_dasar} {rasa}",
             'kategori': kategori,
             'harga': harga_bulat,
             'rak': i
         })
         
-    return products # WAJIB ADA: Mengirimkan data kembali ke aplikasi# MEMBENARKAN: Mengembalikan list data ke sistem Gudang
+    return products  # WAJIB ADA: Mengirimkan data kembali ke aplikasi # MEMBENARKAN: Mengembalikan list data ke sistem Gudang
+
 
 @st.cache_data
 def dapatkan_data_gudang(kondisi_sort, filter_kat, _produk_dasar, jml_prd):
@@ -123,7 +117,6 @@ def dapatkan_data_gudang(kondisi_sort, filter_kat, _produk_dasar, jml_prd):
         # Mengurutkan kategori (A-Z), lalu harga (Besar ke Kecil menggunakan tanda minus)
         data_lokal = sorted(data_lokal, key=lambda x: (x['kategori'].lower(), -x['harga']))
     # ----------------------------------
-        
     else:
         data_lokal = sorted(data_lokal, key=lambda x: x['id'])
         
@@ -131,6 +124,7 @@ def dapatkan_data_gudang(kondisi_sort, filter_kat, _produk_dasar, jml_prd):
         produk['rak_sekarang'] = indeks_baru 
         
     return data_lokal
+
 
 # ========== 3 ALGORITMA PENCARIAN ADAPTIF (FIXED LOGIKA ASCENDING) ==========
 
@@ -148,6 +142,7 @@ def linear_search(data, target, key_cari):
             if int(val_data) == int(val_target):
                 return i, langkah
     return -1, langkah
+
 
 def binary_search(data, target, key_cari, is_descending=False):
     langkah = 0
@@ -179,12 +174,12 @@ def binary_search(data, target, key_cari, is_descending=False):
         # --------------------------------------------------------
         
         # Logika pergeseran indeks pencarian
-        if not is_descending: # Urutan Menaik (Ascending)
+        if not is_descending:  # Urutan Menaik (Ascending)
             if val_mid < val_target:
                 left = mid + 1
             else:
                 right = mid - 1
-        else:                 # Urutan Menurun (Descending)
+        else:                  # Urutan Menurun (Descending)
             if val_mid > val_target:
                 left = mid + 1
             else:
@@ -259,6 +254,8 @@ def interpolation_search(data, target, key_cari, is_descending=False):
                 high = pos - 1
                 
     return -1, langkah
+
+
 # ========== NAVIGATION STATE ==========
 if 'halaman_sekarang' not in st.session_state:
     st.session_state.halaman_sekarang = 1
@@ -305,8 +302,8 @@ with st.sidebar:
     )
     # Letakkan ini di bagian paling bawah blok 'with st.sidebar:'
     st.divider()
-    if st.button("♻️ Paksa Reset Data & Cache", use_container_width=True):
-        st.cache_data.clear() # Menghapus semua memori cache Streamlit
+    if st.button("♻️ Reset chache", use_container_width=True):
+        st.cache_data.clear()  # Menghapus semua memori cache Streamlit
         st.rerun()
 
 # Load data
@@ -321,15 +318,14 @@ with col_info2:
     st.warning(f"💡 **Total Produk Aktif Sesuai Filter Kategori:** {len(data_list)} Items")
 
 # ========== INTERMUKA INPUT MULTI-KATEGORI PENCARIAN ==========
-# ========== INTERMUKA INPUT MULTI-KATEGORI PENCARIAN ==========
-# ========== INTERMUKA INPUT 2 PILIHAN (SEDERHANA & PINTAR) ==========
+
 st.divider()
-st.subheader("🔎 Menu Operasi Pencarian Pintar")
+st.subheader("🔎 Menu searching")
 
 # Disederhanakan menjadi 2 pilihan sesuai permintaan Anda
 kategori_pencarian = st.selectbox(
     "Pilih Parameter Variabel Pencarian:",
-    ["Nominal Harga Barang (Angka Bulat)", "Nama Produk / Kategori Menu (Teks)"]
+    ["Cari Dengan Harga", "Cari Dengan Nama Produk"]
 )
 
 col1, col2 = st.columns([3, 1], vertical_alignment="bottom")
@@ -365,23 +361,18 @@ if cari_button:
     valid_sort = True
     is_desc = "Termahal" in kondisi_data
     
-    if key_cari == 'nama' and "Nama" not in kondisi_data:
-        # Jika mencari nama tapi rak di sidebar tidak urut nama, kita urutkan di background
+    if key_cari == 'harga':
+        # Tidak peduli apa pilihan di sidebar, jika mencari HARGA, paksa data_pencarian urut berdasarkan HARGA
+        data_pencarian = sorted(data_pencarian, key=lambda x: x['harga'], reverse=is_desc)
+        if "Harga" not in kondisi_data:
+            st.caption("ℹ️ *Sistem otomatis menyelaraskan urutan Harga di latar belakang agar Binary/Interpolation presisi.*")
+    else:
+        # Jika mencari TEKS (nama/kategori), paksa data_pencarian urut berdasarkan NAMA (Alfabetis)
         data_pencarian = sorted(data_pencarian, key=lambda x: x['nama'].lower())
         is_desc = False
-        st.caption("ℹ️ *Sistem otomatis mengurutkan indeks berdasarkan alfabetis Nama di latar belakang agar Binary/Interpolation berjalan.*")
-        
-    elif key_cari == 'harga' and "Harga" not in kondisi_data:
-        # Jika mencari harga tapi rak di sidebar tidak urut harga murni, kita urutkan di background
-        data_pencarian = sorted(data_pencarian, key=lambda x: x['harga'], reverse=is_desc)
-        st.caption("ℹ️ *Sistem otomatis menyelaraskan urutan Harga di latar belakang agar Binary/Interpolation presisi.*")
-        
-    elif key_cari == 'kategori' and "Kategori" not in kondisi_data:
-        # Jika mencari kategori murni tapi rak di sidebar tidak mendukung
-        data_pencarian = sorted(data_pencarian, key=lambda x: x['kategori'].lower())
-        is_desc = False
-        st.caption("ℹ️ *Sistem otomatis mengelompokkan Kategori di latar belakang agar Binary/Interpolation berjalan.*")
-
+        if "Nama" not in kondisi_data:
+            st.caption("ℹ️ *Sistem otomatis mengurutkan indeks berdasarkan alfabetis Nama di latar belakang agar Binary/Interpolation berjalan.*")
+    # ===============================================================================
     # Jalankan Algoritma
     indeks_ditemukan = -1
     
@@ -468,17 +459,26 @@ with st.expander("🔬 Perbandingkan Ketiga Algoritma Sekaligus"):
             is_desc_banding = False
         elif key_cari_banding == 'harga' and "Harga" not in kondisi_data:
             data_banding = sorted(data_banding, key=lambda x: x['harga'], reverse=is_desc_banding)
-        elif key_cari_banding == 'kategori' and "Kategori" not in kondisi_data:
+        else:
+            # key_cari_banding == 'kategori' and "Kategori" not in kondisi_data
             data_banding = sorted(data_banding, key=lambda x: x['kategori'].lower())
             is_desc_banding = False
 
-        start = time.time(); idx_l, steps_l = linear_search(data_list, target_input, key_cari_banding); t_l = (time.time() - start) * 1000
+        start = time.time()
+        idx_l, steps_l = linear_search(data_list, target_input, key_cari_banding)
+        t_l = (time.time() - start) * 1000
         
-        start = time.time(); idx_b, steps_b = binary_search(data_banding, target_input, key_cari_banding, is_descending=is_desc_banding); t_b = (time.time() - start) * 1000
-        if idx_b != -1: idx_b = next(i for i, p in enumerate(data_list) if p['id'] == data_banding[idx_b]['id'])
+        start = time.time()
+        idx_b, steps_b = binary_search(data_banding, target_input, key_cari_banding, is_descending=is_desc_banding)
+        t_b = (time.time() - start) * 1000
+        if idx_b != -1: 
+            idx_b = next(i for i, p in enumerate(data_list) if p['id'] == data_banding[idx_b]['id'])
         
-        start = time.time(); idx_i, steps_i = interpolation_search(data_banding, target_input, key_cari_banding, is_descending=is_desc_banding); t_i = (time.time() - start) * 1000
-        if idx_i != -1: idx_i = next(i for i, p in enumerate(data_list) if p['id'] == data_banding[idx_i]['id'])
+        start = time.time()
+        idx_i, steps_i = interpolation_search(data_banding, target_input, key_cari_banding, is_descending=is_desc_banding)
+        t_i = (time.time() - start) * 1000
+        if idx_i != -1: 
+            idx_i = next(i for i, p in enumerate(data_list) if p['id'] == data_banding[idx_i]['id'])
         
         comparison_data = {
             "Algoritma": ["Linear Search", "Binary Search", "Interpolation Search"],
@@ -552,7 +552,19 @@ with st.expander("📋 Lihat Semua Data Produk", expanded=True):
         st.warning("⚠️ Tidak ada data untuk ditampilkan di dalam gudang.")
 
 # ========== FOOTER INFORMASI TEKNIS ==========
-with st.expander("ℹ️ Panduan Karakteristik Pencarian"):
+with st.expander("👤 Informasi Pembuat"):
     st.markdown("""
-    * **Jaminan Deteksi**: Angka dan huruf dibandingkan secara terpisah sesuai aturan tipe data primitif, memperbaiki error komparasi string biner di mode urutan menaik.
-    """)
+    <h1 class="info-dev">* <b>Nama</b> : Muhammad Hakkul Qoul</h1>
+    <h1 class="info-dev">* <b>NIM</b> : 202569040005</h1>
+    """, unsafe_allow_html=True)
+        
+    st.markdown("""
+        <style>
+        .info-dev {
+            color: #1e40af !important; 
+            font-size: 18px !important; 
+            font-weight: normal;
+            margin: 5px 0;
+        }
+        </style>
+        """, unsafe_allow_html=True)
