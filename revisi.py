@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 st.title("🔍 Analisis Algoritma SEARCHING dan SORTING Berbasis Web")
-st.write("Menemukan posisi rak (indeks array) berdasarkan Nama, Kategori, atau Harga Produk — Bebas pilih algoritma!")
+st.write("Menemukan posisi rak (indeks array) berdasarkan Nama, Kategori, atau Harga Produk — Pilih algoritma yang di sediakan")
 
 st.markdown("""
     <style>
@@ -54,7 +54,6 @@ st.markdown("""
         <p style="margin:0;">🔍 Sistem Pencarian Produk Gudang Digital — Hakkul IT 2026.</p>
     </div>
 """, unsafe_allow_html=True)
-
 
 # ========== MEMBUAT DATA PRODUK (DITAMBAHKAN FITUR ACAK TOTAL) ==========
 
@@ -243,8 +242,6 @@ def interpolation_search(data, target, key_cari, is_descending=False):
                 
     return -1, langkah
 
-
-# ========== NAVIGATION & COMPONENT STATE MURNI ==========
 if 'halaman_sekarang' not in st.session_state:
     st.session_state.halaman_sekarang = 1
 if 'pencarian_dimulai' not in st.session_state:
@@ -308,8 +305,7 @@ with col_info1:
     st.info(f"📊 **Kondisi Pengurutan Gudang:** {kondisi_data}")
 with col_info2:
     st.warning(f"💡 **Total Produk Aktif Sesuai Filter Kategori:** {len(data_list)} Items")
-
-# ========== INTERMUKA INPUT MULTI-KATEGORI PENCARIAN ==========
+    
 st.divider()
 st.subheader("🔎 Menu searching")
 
@@ -331,14 +327,13 @@ with col1:
 with col2:
     cari_button = st.button("🔍 Cari Sekarang", type="primary", use_container_width=True)
 
-# SINKRONISASI EVALUASI PERUBAHAN INPUT
 current_target_str = str(int(target_input)) if key_cari == 'harga' else str(target_input).strip()
 saved_target_str = st.session_state.target_terpilih.split('.')[0] if key_cari == 'harga' and '.' in st.session_state.target_terpilih else st.session_state.target_terpilih
 
 if current_target_str != saved_target_str:
     st.session_state.pencarian_dimulai = False
 
-# ========== EKSEKUSI SEARCHING OPERASI ==========
+# ========== EKSEKUSI SEARCHING ==========
 if cari_button:
     with st.spinner("🤖 Mengambil data & memproses algoritma di rak gudang..."):
         time.sleep(0.4) 
@@ -404,7 +399,7 @@ if cari_button:
         st.session_state.langkah_komputasi = langkah
         st.session_state.waktu_komputasi = waktu
 
-# PANEL RENDERING UI HASIL PENCARIAN 
+# PANEL UI HASIL PENCARIAN 
 if st.session_state.pencarian_dimulai and st.session_state.indeks_ditemukan != -1:
     st.divider()
     st.subheader("📊 Hasil Pencarian")
